@@ -1,25 +1,10 @@
-const vscode = require('vscode');
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
+import * as vscode from 'vscode';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-const execPromise = util.promisify(exec);
+const execPromise = promisify(exec);
 
-function getGitConfig() {
-    const configPath = path.join(__dirname, '../config/git-config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    
-    // Reemplazar variables de entorno
-    const token = process.env.GITHUB_TOKEN || config.repository.token.replace('${GITHUB_TOKEN}', '');
-    
-    return {
-        ...config.repository,
-        token
-    };
-}
-
-async function createBranchAndPR(score, branchName) {
+export async function createBranchAndPR(score: number | string, branchName: string): Promise<boolean> {
     try {
         // Validar que la nota no sea inadequate
         if (score === 'inadequate') {
@@ -69,8 +54,4 @@ async function createBranchAndPR(score, branchName) {
         vscode.window.showErrorMessage(`No se pudo crear el PR: ${error.message}`);
         return false;
     }
-}
-
-module.exports = {
-    createBranchAndPR
-}; 
+} 

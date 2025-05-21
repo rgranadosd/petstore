@@ -13,7 +13,7 @@ import isIntelliJ from "../utils/is-intellij";
 import defaultGetApiIdentifier from "./utils/get-api-identifier";
 import Feedback from "../components/feedback";
 import IndicatorRadar from "../components/IndicatorRadar";
-import { createBranchAndPR } from '../../../utils/git-utils';
+import { createBranchAndPR } from '../../../../vscode-apiscoring/code/src/utils/git-utils';
 
 import type {
   ApiIdentifier,
