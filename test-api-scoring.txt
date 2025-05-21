@@ -1,0 +1,12 @@
+API Scoring Test Results
+======================
+
+This is a test file to verify the Push to GIT functionality.
+The API has been scored with the following results:
+
+- Overall Score: 85
+- Design Score: 90
+- Security Score: 85
+- Documentation Score: 80
+
+These scores indicate a good quality API with room for improvement in documentation. 
