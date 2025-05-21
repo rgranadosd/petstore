@@ -1,0 +1,7 @@
+{
+    "repository": {
+        "url": "https://github.com/your-username/your-repo",
+        "user": "your-email@example.com",
+        "token": "${GITHUB_TOKEN}"
+    }
+} 
