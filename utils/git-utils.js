@@ -18,7 +18,7 @@ function getGitConfig() {
     };
 }
 
-async function createBranchAndPR(score, branchName) {
+async function createBranchAndPR(score, branchName, prTitle, prBody) {
     try {
         const gitConfig = getGitConfig();
         
@@ -43,9 +43,6 @@ async function createBranchAndPR(score, branchName) {
         await execPromise(`git push origin ${branchName}`);
         
         // Crear PR usando GitHub CLI
-        const prTitle = `API Score Update: ${score}`;
-        const prBody = `This PR contains updates based on the API score: ${score}`;
-        
         await execPromise(`gh pr create --title "${prTitle}" --body "${prBody}" --base main`);
         
         return true;

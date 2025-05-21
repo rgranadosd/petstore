@@ -620,7 +620,44 @@ export default function CertificationPage<
                             try {
                               const apiName = certification?.results?.[0]?.apiName || 'api-update';
                               const branchName = `api-scoring-${apiName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-                              const success = await createBranchAndPR(certification?.results?.[0]?.score || 0, branchName);
+                              
+                              // Generate detailed PR description
+                              const score = certification?.results?.[0]?.score || 0;
+                              const designScore = scores.design.toFixed(2);
+                              const securityScore = scores.security.toFixed(2);
+                              const docScore = scores.documentation.toFixed(2);
+                              
+                              const prTitle = `API Scoring Update: ${apiName} (Score: ${score})`;
+                              const prBody = `## API Scoring Results
+
+### Overall Score: ${score}
+
+### Detailed Scores:
+- Design: ${designScore}%
+- Security: ${securityScore}%
+- Documentation: ${docScore}%
+
+### Design Assessment:
+${(() => {
+  const designValidation = certification?.results?.[0]?.result?.find(r => 'designValidation' in r) as { designValidation: CodeValidation };
+  return designValidation?.designValidation?.ratingDescription || 'No design validation results available.';
+})()}
+
+### Security Assessment:
+${(() => {
+  const securityValidation = certification?.results?.[0]?.result?.find(r => 'securityValidation' in r) as { securityValidation: CodeValidation };
+  return securityValidation?.securityValidation?.ratingDescription || 'No security validation results available.';
+})()}
+
+### Documentation Assessment:
+${(() => {
+  const docValidation = certification?.results?.[0]?.result?.find(r => 'documentationValidation' in r) as { documentationValidation: DocValidation };
+  return docValidation?.documentationValidation?.ratingDescription || 'No documentation validation results available.';
+})()}
+
+This PR contains updates based on the API scoring results.`;
+
+                              const success = await createBranchAndPR(score, branchName, prTitle, prBody);
                               
                               if (success) {
                                 alert('Branch and PR created successfully!');
@@ -643,7 +680,7 @@ export default function CertificationPage<
                             fontWeight: 'bold'
                           }}
                         >
-                          Create Branch & PR
+                          Push to GIT
                         </button>
                       )}
                     </div>
