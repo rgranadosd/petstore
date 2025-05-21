@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../../Develop/PoC/GITOPS/workflow-api/my-api-1/apis/my-api-1/v1"
+		}
+	],
+	"settings": {}
+}

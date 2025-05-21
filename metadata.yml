@@ -1,0 +1,5 @@
+apis:
+  - name: "OpenAPI Petstore"
+    api-spec-type: rest
+    definition-path: apis
+    definition-file: petstore.yaml
