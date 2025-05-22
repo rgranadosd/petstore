@@ -50,7 +50,8 @@ jobs:
         id: specs
         shell: bash
         run: |
-          mapfile -t SPEC_FILES < <(git ls-files 'apis/**/api.yaml' 'apis/**/petstore.yaml')
+          mapfile -t SPEC_FILES < <(git ls-files '**/api.yaml' '**/petstore.yaml')
+
           if [ ${#SPEC_FILES[@]} -eq 0 ]; then
             echo "::error::No se encontró ningún archivo api.yaml ni petstore.yaml."
             exit 1
