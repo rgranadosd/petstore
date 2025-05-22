@@ -1,19 +1,21 @@
 name: Importar
+
 on:
   push:
     branches: [ main ]
     paths: 
-           - 'apis/**'
-           - 'petstore.yaml'
+      - 'apis/**'
+      - 'petstore.yaml'
 
 jobs:
   create:
     runs-on: ubuntu-latest
 
     steps:
+    # 1. Checkout del código
     - uses: actions/checkout@v3
 
-    # Instalar apictl (mantengo tu versión 4.3.3)
+    # 2. Instalar apictl
     - name: Instalar apictl
       run: |
         FILE="apictl-4.3.3-linux-amd64.tar.gz"
@@ -23,7 +25,23 @@ jobs:
         sudo install -m 755 apictl/apictl /usr/local/bin/apictl
         apictl version
 
-    # Añadir entorno vía túnel + login
+    # 3. Validar que los endpoints no están vacíos ni mal formateados
+    - name: Validar secretos
+      env:
+        APIM_ENDPOINT:       ${{ secrets.APIM_ENDPOINT }}
+        APIM_TOKEN_ENDPOINT: ${{ secrets.APIM_TOKEN_ENDPOINT }}
+      run: |
+        if [[ -z "$APIM_ENDPOINT" || -z "$APIM_TOKEN_ENDPOINT" ]]; then
+          echo "::error::Faltan APIM_ENDPOINT o APIM_TOKEN_ENDPOINT"
+          exit 1
+        fi
+        if [[ "$APIM_TOKEN_ENDPOINT" == *$'\n'* ]]; then
+          echo "::error::APIM_TOKEN_ENDPOINT contiene saltos de línea"
+          exit 1
+        fi
+        echo "::notice::Validación de secretos superada"
+
+    # 4. Añadir entorno y hacer login
     - name: Login APIM
       env:
         APIM_ENDPOINT:       ${{ secrets.APIM_ENDPOINT }}
@@ -35,23 +53,20 @@ jobs:
           --apim  "$APIM_ENDPOINT" \
           --token "$APIM_TOKEN_ENDPOINT" \
           --insecure
-        apictl login dev-env -u "$APIM_USER" -p "$APIM_PASS" -k
+        echo "$APIM_PASS" | apictl login dev-env -u "$APIM_USER" --password-stdin -k
 
-    # Importar OAS → estado CREATED y SIN despliegue
+    # 5. Importar las APIs en estado CREATED sin desplegar revisiones
     - name: Importar working copy (CREATED)
       run: |
         shopt -s globstar nullglob
-        for oas in apis/**/api.yaml; do
+        for oas in apis/**/api.yaml apis/**/petstore.yaml; do
           base_dir=$(dirname "$oas")
           api_name=$(basename "$(dirname "$base_dir")")
           api_version=$(basename "$base_dir")
           proj="/tmp/${api_name}_${api_version}"
           rm -rf "$proj"
 
-          # --initial-state=CREATED   ==> ciclo de vida queda en CREATED
           apictl init "$proj" --oas "$oas" --initial-state=CREATED
-
-          # --skip-deployments        ==> NO crea ni despliega revisión
           apictl import api -f "$proj" -e dev-env \
             --update --skip-deployments -k
         done
