@@ -2,7 +2,9 @@ name: Importar
 on:
   push:
     branches: [ main ]
-    paths: [ 'apis/**' ]
+    paths: 
+           - 'apis/**'
+           - 'petstore.yaml'
 
 jobs:
   create:
