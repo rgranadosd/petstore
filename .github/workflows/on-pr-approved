@@ -1,0 +1,24 @@
+# .github/workflows/on-pr-approved.yml
+name: On PR Approved to Main
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  on-approval:
+    if: |
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      # Aquí puedes poner el script o acción que quieras ejecutar
+      - name: Mensaje de ejemplo
+        run: |
+          echo "¡El PR #${{ github.event.pull_request.number }} hacia main ha sido APROBADO!"
+          # Aquí puedes poner tu lógica: crear rama, notificar, etc.
