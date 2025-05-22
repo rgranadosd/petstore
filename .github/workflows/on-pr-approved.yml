@@ -6,23 +6,6 @@ on:
     types: [submitted]
 
 jobs:
-  on-approval:
-    if: |
-      github.event.review.state == 'approved' &&
-      github.event.pull_request.base.ref == 'main'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      - name: Mensaje de ejemplo
-        run: echo "¡El PR #${{ github.event.pull_request.number }} hacia main ha sido APROBADO!"
-
-      # Puedes añadir aquí más pasos personalizados
-
   run-scoring:
     if: |
       github.event.review.state == 'approved' &&
