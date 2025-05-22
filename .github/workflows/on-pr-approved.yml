@@ -65,6 +65,7 @@ jobs:
           
       - name: Find api.yaml y petstore.yaml
         id: specs
+        shell: bash
         run: |
           mapfile -t SPEC_FILES < <(git ls-files 'apis/**/api.yaml' 'apis/**/petstore.yaml')
           if [ ${#SPEC_FILES[@]} -eq 0 ]; then
