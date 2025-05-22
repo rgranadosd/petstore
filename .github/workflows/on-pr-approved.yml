@@ -62,18 +62,18 @@ jobs:
               exit 1
             fi
           done
+          
       - name: Find api.yaml y petstore.yaml
-          id: specs
-          run: |
-            mapfile -t SPEC_FILES < <(git ls-files 'apis/**/api.yaml' 'apis/**/petstore.yaml')
-            if [ ${#SPEC_FILES[@]} -eq 0 ]; then
-              echo "::error::No se encontró ningún archivo api.yaml ni petstore.yaml."
-              exit 1
-            fi
-            { echo 'specs<<EOF'; printf '%s\n' "${SPEC_FILES[@]}"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
-            echo "::notice::Archivos encontrados: ${SPEC_FILES[*]}"
-
-
+        id: specs
+        run: |
+          mapfile -t SPEC_FILES < <(git ls-files 'apis/**/api.yaml' 'apis/**/petstore.yaml')
+          if [ ${#SPEC_FILES[@]} -eq 0 ]; then
+            echo "::error::No se encontró ningún archivo api.yaml ni petstore.yaml."
+            exit 1
+          fi
+          { echo 'specs<<EOF'; printf '%s\n' "${SPEC_FILES[@]}"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
+          echo "::notice::Archivos encontrados: ${SPEC_FILES[*]}"
+          
       - name: Run scoring & build summary
         run: |
           mapfile -t SPECS <<<"${{ steps.specs.outputs.specs }}"
