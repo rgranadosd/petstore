@@ -19,7 +19,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Mensaje de ejemplo
-        run: echo "¡El PR #${{ github.event.pull_request.number }} hacia main ha sido APROBADO!"
+        run: 'echo "¡El PR #${{ github.event.pull_request.number }} hacia main ha sido APROBADO!"'
 
       # Puedes añadir aquí más pasos personalizados
 
