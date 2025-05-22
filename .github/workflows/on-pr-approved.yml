@@ -88,8 +88,9 @@ jobs:
           }
 
           for spec in "${SPECS[@]}"; do
-            api=$(basename "$(dirname "$(dirname "$spec")")")
-            ver=$(basename "$(dirname "$spec")")
+            spec_dir=$(dirname "$spec")
+            api=$(basename "$(dirname "$spec_dir")")
+            ver=$(basename "$spec_dir")
             out="scores/${api}_${ver}.json"
 
             echo "⏩ Scoring $spec → $out"
