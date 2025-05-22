@@ -11,14 +11,135 @@ jobs:
       github.event.review.state == 'approved' &&
       github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      # Aquí puedes poner el script o acción que quieras ejecutar
       - name: Mensaje de ejemplo
+        run: echo "¡El PR #${{ github.event.pull_request.number }} hacia main ha sido APROBADO!"
+
+      # Puedes añadir aquí más pasos personalizados
+
+  run-scoring:
+    if: |
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Clone scoring engine
+        run: git clone --depth 1 https://github.com/rgranadosd/api-scoring-engine.git scoring_engine
+
+      - name: Enable docker-compose alias if needed
         run: |
-          echo "¡El PR #${{ github.event.pull_request.number }} hacia main ha sido APROBADO!"
-          # Aquí puedes poner tu lógica: crear rama, notificar, etc.
+          if ! command -v docker-compose &>/dev/null; then
+            printf '#!/usr/bin/env bash\nexec docker compose "$@"\n' \
+              | sudo tee /usr/local/bin/docker-compose >/dev/null
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
+
+      - name: Start scoring engine
+        working-directory: scoring_engine
+        run: |
+          docker-compose up --build -d
+          echo "⏳ Waiting for /health 200..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:8088/health >/dev/null; then
+              echo "✅ Ready"
+              break
+            fi
+            sleep 5
+            if [ $i -eq 30 ]; then
+              echo "::error::Timeout - Container not healthy"
+              docker-compose logs
+              curl -v http://localhost:8088/health
+              exit 1
+            fi
+          done
+
+      - name: Find api.yaml
+        id: specs
+        run: |
+          mapfile -t SPEC_FILES < <(git ls-files 'apis/**/api.yaml')
+          if [ ${#SPEC_FILES[@]} -eq 0 ]; then
+            echo "::error::No se encontró ningún archivo api.yaml."
+            exit 1
+          fi
+          { echo 'specs<<EOF'; printf '%s\n' "${SPEC_FILES[@]}"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
+          echo "::notice::Archivos api.yaml encontrados: ${SPEC_FILES[*]}"
+
+      - name: Run scoring & build summary
+        run: |
+          mapfile -t SPECS <<<"${{ steps.specs.outputs.specs }}"
+          mkdir -p scores
+
+          {
+            echo "## Resultados de calidad de las APIs"
+            echo
+            echo "| API | Módulo | Nota | Score |"
+            echo "|-----|--------|------|-------|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          color () {
+            local grade="$1"
+            local symbol=""
+            if [[ "$grade" =~ ^A(\+|$) ]]; then
+              symbol="✅ "
+            elif [[ "$grade" == "B" ]]; then
+              symbol="⚠️ "
+            else
+              symbol="❌ "
+            fi
+            echo -n "${symbol}${grade}"
+          }
+
+          for spec in "${SPECS[@]}"; do
+            api=$(basename "$(dirname "$(dirname "$spec")")")
+            ver=$(basename "$(dirname "$spec")")
+            out="scores/${api}_${ver}.json"
+
+            echo "⏩ Scoring $spec → $out"
+
+            curl --fail -s -v \
+              -X POST \
+              -F "file=@${spec};type=text/yaml" \
+              -F "apiProtocol=REST" \
+              http://localhost:8088/apifirst/v1/apis/score-file \
+              -o "$out" || { echo "::warning::Curl failed for ${spec}. Check logs for details."; cat "$out" 2>/dev/null; true; }
+
+            read -r overall_rating overall_score <<< $(jq -r '[.overallRating // "?", (.overallScore | tostring) // "-"] | @tsv' "$out")
+            echo "| ${api} ${ver} | **Overall** | $(color "$overall_rating") | ${overall_score:- -} |" >> "$GITHUB_STEP_SUMMARY"
+
+            JQ_MODULE_OUTPUT=$(jq -r '
+              [
+                {"name": "Design", "rating": .designRating, "score": .designScore},
+                {"name": "Security", "rating": .securityRating, "score": .securityScore},
+                {"name": "Documentation", "rating": .documentationRating, "score": .documentationScore}
+              ]
+              | map("\(.name)\t\(.rating // "?")\t\((.score | tostring) // "-")")
+              | .[]
+            ' "$out")
+
+            echo "$JQ_MODULE_OUTPUT" | while IFS=$'\t' read -r mod rating score; do
+                if [ -n "$mod" ] && [ -n "$rating" ]; then
+                  echo "| ${api} ${ver} | ${mod} | $(color "$rating") | ${score:- -} |" >> "$GITHUB_STEP_SUMMARY"
+                fi
+            done
+          done
+
+      - name: Upload scores
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-scores
+          path: scores/
+
+      - name: Tear-down
+        if: always()
+        working-directory: scoring_engine
+        run: docker-compose down
