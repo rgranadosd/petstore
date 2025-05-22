@@ -121,9 +121,6 @@ jobs:
             done
           done
 
-      - name: Copiar resultados desde el contenedor
-        run: docker cp scoring_engine-scoring-api-1:/app/scores ./scores
-
       - name: Verificar archivos generados
         run: ls -l scores
 
