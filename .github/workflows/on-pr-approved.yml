@@ -16,6 +16,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Crear directorio de resultados
+        run: mkdir -p scores
+
       - name: Clone scoring engine
         run: git clone --depth 1 https://github.com/rgranadosd/api-scoring-engine.git scoring_engine
 
@@ -117,6 +120,12 @@ jobs:
                 fi
             done
           done
+
+      - name: Copiar resultados desde el contenedor
+        run: docker cp scoring_engine-scoring-api-1:/app/scores ./scores
+
+      - name: Verificar archivos generados
+        run: ls -l scores
 
       - name: Upload scores
         uses: actions/upload-artifact@v4
