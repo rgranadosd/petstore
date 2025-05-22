@@ -3,7 +3,7 @@ info:
   title: OpenAPI Petstore
   description: This is a sample server Petstore server. For this sample, you can use the api key `special-key` to test the authorization filters. For OAuth2 flow, you may use `user` as both username and password when asked to login.
   contact:
-    name: testing_v3.02a
+    name: testing_v3.03c
     url: http://swagger.io/support
     email: testing@test.com 
   license:
